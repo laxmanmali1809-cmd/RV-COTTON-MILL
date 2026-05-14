@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RV COTTON MILL | Live Order Dispatch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">RV</div>
+          <div>
+            <p class="eyebrow">Surat Textile Market Sector</p>
+            <h1>RV COTTON MILL</h1>
+            <span>Live Dispatch Desk</span>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" aria-label="Workspace views">
+          <button class="nav-tab active" type="button" data-view="adminView">
+            <span class="tab-icon" aria-hidden="true">01</span>
+            Admin Orders
+          </button>
+          <button class="nav-tab" type="button" data-view="clientView">
+            <span class="tab-icon" aria-hidden="true">02</span>
+            Client View
+          </button>
+          <button class="nav-tab" type="button" data-view="queryView">
+            <span class="tab-icon" aria-hidden="true">03</span>
+            Query Inbox
+          </button>
+        </nav>
+
+        <div class="sidebar-panel">
+          <div class="live-row">
+            <span class="live-dot" aria-hidden="true"></span>
+            <strong>Live sync</strong>
+          </div>
+          <p id="lastUpdated">Ready</p>
+          <div class="client-chip">
+            <span>Client code</span>
+            <strong id="activeClientChip">-</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="top-band" aria-label="Business summary">
+          <div>
+            <p class="eyebrow">Textile dispatch control</p>
+            <h2>Order status board for fabric clients</h2>
+          </div>
+          <div class="top-actions">
+            <button class="ghost-btn" type="button" id="importSheetBtn">Import Google Sheet</button>
+            <button class="ghost-btn" type="button" id="autoSyncBtn">Auto CSV sync on</button>
+            <button class="ghost-btn" type="button" id="seedDataBtn">Reload demo data</button>
+            <button class="primary-btn" type="button" id="exportBtn">Export JSON</button>
+            <span class="sync-note" id="sheetSyncStatus">CSV sync ready</span>
+          </div>
+        </section>
+
+        <section class="view active" id="adminView" aria-label="Admin order dashboard">
+          <div class="stats-grid" id="statsGrid"></div>
+
+          <div class="workspace-grid">
+            <section class="panel order-editor" aria-label="Order editor">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Admin update</p>
+                  <h3 id="orderFormTitle">Add order</h3>
+                </div>
+                <button class="text-btn" type="button" id="resetOrderForm">Clear</button>
+              </div>
+
+              <form id="orderForm" class="order-form">
+                <input type="hidden" id="orderId" />
+
+                <label>
+                  Client name
+                  <input id="clientName" type="text" placeholder="Sunrise Garments" required />
+                </label>
+
+                <label>
+                  Client code
+                  <input id="clientCode" type="text" placeholder="RV-SUN-102" required />
+                </label>
+
+                <label>
+                  PO no.
+                  <input id="poNo" type="text" placeholder="PO-2480" required />
+                </label>
+
+                <label>
+                  Order date
+                  <input id="orderDate" type="date" required />
+                </label>
+
+                <label>
+                  Fabric
+                  <input id="fabric" type="text" placeholder="Cotton cambric 60s" required />
+                </label>
+
+                <label>
+                  Quantity
+                  <input id="quantity" type="text" placeholder="2500 m" required />
+                </label>
+
+                <label>
+                  Order status
+                  <select id="orderStatus" required>
+                    <option value="Undispatched">Undispatched</option>
+                    <option value="Dispatched">Dispatched</option>
+                  </select>
+                </label>
+
+                <label>
+                  Dispatch date
+                  <input id="dispatchDate" type="date" />
+                </label>
+
+                <label>
+                  Delivery code
+                  <input id="deliveryCode" type="text" placeholder="DLV-ST-7382" />
+                </label>
+
+                <label class="file-label">
+                  Image of item
+                  <input id="itemImage" type="file" accept="image/*" />
+                  <span id="imageFileName">No new image selected</span>
+                </label>
+
+                <div
+                  class="paste-image-zone"
+                  id="pasteImageZone"
+                  role="group"
+                  tabindex="0"
+                  aria-label="Paste item image from WhatsApp"
+                >
+                  <div class="paste-image-copy">
+                    <strong>Paste WhatsApp image</strong>
+                    <span id="pasteImageStatus">No pasted image</span>
+                  </div>
+                  <img id="pastedImagePreview" class="paste-image-preview" alt="Pasted item" hidden />
+                  <button class="text-btn paste-clear" type="button" id="clearPastedImage" hidden>Remove</button>
+                </div>
+
+                <div class="form-actions">
+                  <button class="primary-btn" type="submit">Save order</button>
+                  <button class="ghost-btn" type="button" id="cancelEditBtn">Cancel edit</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel table-panel" aria-label="All orders">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">All client orders</p>
+                  <h3>Dispatch register</h3>
+                </div>
+                <label class="search-box">
+                  Search
+                  <input id="orderSearch" type="search" placeholder="PO, code, fabric" />
+                </label>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>PO no.</th>
+                      <th>Client code</th>
+                      <th>Order date</th>
+                      <th>Fabric</th>
+                      <th>Quantity</th>
+                      <th>Status</th>
+                      <th>Dispatch date</th>
+                      <th>Delivery code</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTable"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="clientView" aria-label="Client order view">
+          <section class="client-gate">
+            <div>
+              <p class="eyebrow">Client portal</p>
+              <h3>Track fabric orders</h3>
+            </div>
+            <form id="clientCodeForm" class="client-code-form">
+              <label>
+                Client code
+                <input id="clientPortalCode" type="text" placeholder="RV-SUN-102" required />
+              </label>
+              <button class="primary-btn" type="submit">Open orders</button>
+            </form>
+          </section>
+
+          <div class="client-summary" id="clientSummary"></div>
+
+          <section class="client-orders" id="clientOrders"></section>
+
+          <section class="query-layout" aria-label="Client query section">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Client query</p>
+                  <h3>Raise a query</h3>
+                </div>
+              </div>
+
+              <form id="queryForm" class="query-form">
+                <label>
+                  PO no.
+                  <input id="queryPoNo" type="text" placeholder="PO-2471" />
+                </label>
+                <label>
+                  Subject
+                  <input id="querySubject" type="text" placeholder="Dispatch timing" required />
+                </label>
+                <label class="full-span">
+                  Message
+                  <textarea id="queryMessage" rows="4" placeholder="Write your question" required></textarea>
+                </label>
+                <button class="primary-btn" type="submit">Send query</button>
+              </form>
+            </div>
+
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Replies</p>
+                  <h3>Your query history</h3>
+                </div>
+              </div>
+              <div id="clientQueries" class="query-list"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="queryView" aria-label="Admin query inbox">
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Admin query section</p>
+                <h3>All client queries</h3>
+              </div>
+              <div class="segmented" aria-label="Query filters">
+                <button class="segment active" type="button" data-query-filter="All">All</button>
+                <button class="segment" type="button" data-query-filter="Open">Open</button>
+                <button class="segment" type="button" data-query-filter="Answered">Answered</button>
+              </div>
+            </div>
+            <div id="adminQueries" class="admin-query-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
