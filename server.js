@@ -20,6 +20,7 @@ const sessions = new Map();
 const eventClients = new Set();
 const STAFF_ROLES = new Set(["admin", "owner", "developer", "coworker"]);
 const POWER_ROLES = new Set(["admin", "owner", "developer"]);
+const MILL_ROLE = "mill";
 
 let db;
 let saving = Promise.resolve();
@@ -66,6 +67,7 @@ function createSeedDb() {
       seedUser({ username: "admin", password: "Admin@123", role: "admin", name: "Admin Office" }),
       seedUser({ username: "developer", password: "Developer@123", role: "developer", name: "Developer" }),
       seedUser({ username: "dispatch", password: "Dispatch@123", role: "coworker", name: "Dispatch Team" }),
+      seedUser({ username: "mill", password: "Mill@123", role: "mill", name: "Mill Production Team" }),
       seedUser({
         username: "client-a",
         password: "Client@123",
@@ -95,6 +97,8 @@ function createSeedDb() {
         status: "Undispatched",
         dispatchDate: "",
         deliveryCode: "",
+        millOrder: true,
+        millPriority: "Urgent",
         attachments: [],
         source: "seed",
         updatedAt: now()
@@ -112,6 +116,8 @@ function createSeedDb() {
         status: "Dispatched",
         dispatchDate: "2026-05-12",
         deliveryCode: "DEL-STH-5572",
+        millOrder: false,
+        millPriority: "Normal",
         attachments: [],
         source: "seed",
         updatedAt: now()
@@ -129,6 +135,8 @@ function createSeedDb() {
         status: "Undispatched",
         dispatchDate: "",
         deliveryCode: "",
+        millOrder: true,
+        millPriority: "Normal",
         attachments: [],
         source: "seed",
         updatedAt: now()
@@ -177,9 +185,27 @@ async function ensureStore() {
     db.queries ||= [];
     db.users ||= [];
     db.orders ||= [];
+    migrateStore();
+    await saveDb();
   } catch {
     db = createSeedDb();
     await saveDb();
+  }
+}
+
+function migrateStore() {
+  if (!db.users.some((user) => user.username === "mill")) {
+    db.users.push(seedUser({ username: "mill", password: "Mill@123", role: "mill", name: "Mill Production Team" }));
+  }
+  for (const order of db.orders) {
+    order.millOrder = Boolean(order.millOrder);
+    order.millPriority = normalizePriority(order.millPriority || "Normal");
+  }
+  if (db.orders.length && !db.orders.some((order) => order.millOrder)) {
+    const demoOrder = db.orders.find((order) => order.poNo === "PO-2401") || db.orders[0];
+    demoOrder.millOrder = true;
+    demoOrder.millPriority = "Urgent";
+    demoOrder.updatedAt = now();
   }
 }
 
@@ -238,16 +264,29 @@ function canSeeAll(user) {
   return user && STAFF_ROLES.has(user.role);
 }
 
+function isMillUser(user) {
+  return user && user.role === MILL_ROLE;
+}
+
 function visibleOrders(user) {
   if (!user) return [];
   if (canSeeAll(user)) return db.orders;
+  if (isMillUser(user)) return db.orders.filter((order) => order.millOrder);
   return db.orders.filter((order) => order.clientCode === user.clientCode || order.code === user.clientCode);
 }
 
 function visibleQueries(user) {
   if (!user) return [];
   if (canSeeAll(user)) return db.queries;
+  if (isMillUser(user)) return db.queries.filter((query) => query.clientCode === "MILL");
   return db.queries.filter((query) => query.clientCode === user.clientCode);
+}
+
+function canAccessOrder(user, order) {
+  if (!user || !order) return false;
+  if (canSeeAll(user)) return true;
+  if (isMillUser(user)) return Boolean(order.millOrder);
+  return order.clientCode === user.clientCode || order.code === user.clientCode;
 }
 
 function sendJson(res, status, payload, headers = {}) {
@@ -301,6 +340,17 @@ function normalizeStatus(value) {
   return "Undispatched";
 }
 
+function normalizePriority(value) {
+  const text = String(value || "").trim().toLowerCase();
+  return text === "urgent" ? "Urgent" : "Normal";
+}
+
+function normalizeBoolean(value) {
+  if (typeof value === "boolean") return value;
+  const text = String(value || "").trim().toLowerCase();
+  return ["true", "1", "yes", "on", "mill"].includes(text);
+}
+
 function normalizeDate(value) {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -324,6 +374,9 @@ function normalizeQuantity(value) {
 function normalizeOrderInput(input, existing = {}) {
   const clientCode = String(input.clientCode ?? input.code ?? existing.clientCode ?? "").trim();
   const status = normalizeStatus(input.status ?? existing.status);
+  const hasMillOrder = Object.prototype.hasOwnProperty.call(input, "millOrder");
+  const hasMillPriority = Object.prototype.hasOwnProperty.call(input, "millPriority");
+  const millOrder = hasMillOrder ? normalizeBoolean(input.millOrder) : Boolean(existing.millOrder);
   return {
     poNo: String(input.poNo ?? existing.poNo ?? "").trim(),
     orderDate: normalizeDate(input.orderDate ?? existing.orderDate ?? ""),
@@ -339,7 +392,11 @@ function normalizeOrderInput(input, existing = {}) {
       : "",
     deliveryCode: status === "Dispatched"
       ? String(input.deliveryCode ?? existing.deliveryCode ?? "").trim()
-      : ""
+      : "",
+    millOrder,
+    millPriority: millOrder
+      ? normalizePriority(hasMillPriority ? input.millPriority : existing.millPriority)
+      : "Normal"
   };
 }
 
@@ -498,7 +555,7 @@ async function syncSheet() {
           String(order.clientCode).toLowerCase() === normalized.clientCode.toLowerCase()
       );
       if (existing) {
-        Object.assign(existing, normalized, {
+        Object.assign(existing, normalizeOrderInput(input, existing), {
           source: "sheet",
           attachments: existing.attachments || [],
           updatedAt: now()
@@ -559,6 +616,8 @@ function buildDashboard(user) {
       pending,
       quantity,
       clients: new Set(orders.map((order) => order.clientCode)).size,
+      urgent: orders.filter((order) => order.millOrder && order.millPriority === "Urgent").length,
+      normal: orders.filter((order) => order.millOrder && order.millPriority !== "Urgent").length,
       openQueries: visibleQueries(user).filter((query) => query.status !== "Closed").length
     },
     status: [
@@ -715,7 +774,7 @@ async function handleApi(req, res, pathname) {
   const orderMatch = pathname.match(/^\/api\/orders\/([^/]+)(?:\/attachments(?:\/([^/]+))?)?$/);
   if (orderMatch) {
     const order = db.orders.find((item) => item.id === orderMatch[1]);
-    if (!order || (!canSeeAll(user) && order.clientCode !== user.clientCode)) {
+    if (!canAccessOrder(user, order)) {
       return sendError(res, 404, "Order not found.");
     }
     if (req.method === "PUT" && !orderMatch[2]) {
@@ -814,7 +873,7 @@ async function handleApi(req, res, pathname) {
   if ((req.method === "POST" || req.method === "PUT") && pathname.startsWith("/api/users")) {
     if (!canManageUsers(user)) return sendError(res, 403, "You do not have permission to manage users.");
     const body = await readJson(req, 256 * 1024);
-    const allowedRoles = new Set(["owner", "admin", "developer", "coworker", "client"]);
+    const allowedRoles = new Set(["owner", "admin", "developer", "coworker", "mill", "client"]);
     const role = allowedRoles.has(body.role) ? body.role : "client";
     if (req.method === "POST") {
       const username = String(body.username || "").trim();

@@ -22,10 +22,24 @@ http://localhost:3000
 | Admin | `admin` | `Admin@123` |
 | Developer | `developer` | `Developer@123` |
 | Co-worker | `dispatch` | `Dispatch@123` |
+| Mill | `mill` | `Mill@123` |
 | Client | `client-a` | `Client@123` |
 | Client | `client-b` | `Client@123` |
 
-Use the Users screen as owner/admin/developer to create real client usernames, passwords, and client codes.
+Use the Users screen as owner/admin/developer to create real client, mill, or staff usernames and passwords.
+
+## Mill Orders
+
+Admins, owners, developers, and co-workers can create or edit any PO and set:
+
+- `Mill order`: send the PO to the mill interface
+- `Mill priority`: `Urgent` or `Normal`
+
+The mill login only sees POs marked as mill orders. Clients still only see their own client-code POs.
+
+## How It Works Guide
+
+The homepage includes a public How It Works section. After login, every role also has a How It Works screen in the sidebar with role-specific instructions for owner/admin/developer/co-worker/mill/client workflows.
 
 ## Google Sheet Sync
 
