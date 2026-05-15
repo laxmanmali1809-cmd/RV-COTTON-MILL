@@ -1,11 +1,10 @@
 {
-  "name": "rv-cotton-mill-orders",
+  "name": "rv-cotton-mill-portal",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "description": "Role based order tracking portal for RV Cotton Mill.",
   "scripts": {
-    "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check app.js && node --check client.js"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=20"

@@ -1,74 +1,58 @@
-# RV COTTON MILL Live Order Dispatch
+# RV Cotton Mill Portal
 
-A local prototype for RV COTTON MILL, Surat Textile Market Sector.
+Local full-stack demo for RV Cotton Mill, Surat textile market sector.
 
-## What is included
-
-- Admin order entry and editing
-- Client-code based order filtering
-- Live updates across open browser tabs using local browser storage
-- Item images, dispatch status, dispatch date, delivery code, quantity, fabric, PO no., and order date
-- Client query form
-- Admin query inbox with replies
-- JSON export for backup or migration
-- Google Sheet import from the shared RV COTTON MILL sheet
-- WhatsApp/clipboard image paste for each PO through the order editor
-- Public client portal at `/client.html?code=CLIENTCODE`
-- Server-side Google Sheet filtering for client links
-- Automatic CSV refresh every 60 seconds
-- Client filters for PO/fabric, status, and sorting
-- Quick edit existing PO to add a pasted/uploaded image
-
-## Run locally
-
-From this folder:
+## Run
 
 ```powershell
-node server.mjs 4173
+node server.js
 ```
 
-Then open:
+Open:
 
 ```text
-http://localhost:4173
+http://localhost:3000
 ```
 
-Client portal example:
+## Demo Logins
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Owner | `owner` | `Owner@123` |
+| Admin | `admin` | `Admin@123` |
+| Developer | `developer` | `Developer@123` |
+| Co-worker | `dispatch` | `Dispatch@123` |
+| Client | `client-a` | `Client@123` |
+| Client | `client-b` | `Client@123` |
+
+Use the Users screen as owner/admin/developer to create real client usernames, passwords, and client codes.
+
+## Google Sheet Sync
+
+The app imports this Sheet as CSV:
 
 ```text
-http://localhost:4173/client.html?code=FOCUS
+https://docs.google.com/spreadsheets/d/1B5EkMFuu70iDiVcze_0y2DrqEER2Zpx4xlKuT0j57dA/export?format=csv&gid=0
 ```
 
-## Deploy and Share
+Supported columns include:
 
-See [SHARE-INSTRUCTIONS.md](./SHARE-INSTRUCTIONS.md) for the complete owner-side checklist.
-
-## Notes
-
-The Google Sheet import currently maps:
-
-- `P.O NO.` to PO no.
-- `ORDER DATE` to order date
-- `CODE` to client code
-- `ITEM DETAILS` to fabric/details
-- `QUANTITY` to quantity
-- `DISPATCH STATUS` to dispatched/undispatched, where `TRUE` means dispatched
-
-For the full client portal, add these optional columns to the sheet:
-
-- `CLIENT NAME`
-- `IMAGE URL`
+- `P.O NO.`
+- `ORDER DATE`
+- `CODE`
+- `ITEM DETAILS`
+- `QUANTITY`
 - `DISPATCH DATE`
 - `DELIVERY CODE`
+- `DISPATCH STATUS`
 
-## Adding images from WhatsApp
+The `CODE` column is used as the client code when no separate client code column exists. A client user only sees orders where their saved client code matches that order code.
 
-1. Search the PO in the admin dispatch register.
-2. Click `Edit`.
-3. Copy the item image from WhatsApp.
-4. Click the `Paste WhatsApp image` box in the order form and paste.
-5. Click `Save order`.
+## Storage
 
-The saved image appears on the client-side order status card. Future Google Sheet imports preserve pasted PO images.
+- Local database: `data/db.json`
+- Uploaded order files: `uploads/`
 
-This is still a local prototype. For real client access on the internet, connect it to a secure backend with authentication, database storage, and hosted realtime sync.
+## Production Upgrade
+
+For real internet access, host the Node app and replace local JSON/session storage with managed auth and a database with row-level security, for example Supabase. Keep HTTPS enabled, use strong passwords, and store file uploads in private object storage.
